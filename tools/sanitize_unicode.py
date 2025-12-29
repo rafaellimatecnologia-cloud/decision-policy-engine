@@ -26,7 +26,8 @@ SCAN_EXTENSIONS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
 
 
 def sanitize_text(text: str) -> str:
-    return "".join(ch for ch in text if ord(ch) not in CODEPOINTS)
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    return "".join(ch for ch in normalized if ord(ch) not in CODEPOINTS)
 
 
 def iter_tracked_files(repo_root: Path) -> list[Path]:
@@ -49,11 +50,13 @@ def sanitize_repo(repo_root: Path) -> list[Path]:
     changed: list[Path] = []
     for path in iter_tracked_files(repo_root):
         data = path.read_bytes()
+        bom_stripped = False
         if data.startswith(BOM_BYTES):
             data = data[len(BOM_BYTES) :]
+            bom_stripped = True
         text = data.decode("utf-8", errors="ignore")
         sanitized = sanitize_text(text)
-        if sanitized != text:
+        if sanitized != text or bom_stripped:
             path.write_text(sanitized, encoding="utf-8", newline="\n")
             changed.append(path)
     return changed
