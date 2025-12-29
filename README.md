@@ -25,8 +25,17 @@ flowchart TD
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
 python examples/demo_cli.py --scenario network_off
+pytest
+```
+
+Windows PowerShell:
+```powershell
+python -m venv .venv
+.venv\\Scripts\\Activate.ps1
+pip install -e ".[dev]"
+python examples\\demo_cli.py --scenario network_off
 pytest
 ```
 

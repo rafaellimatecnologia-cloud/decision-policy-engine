@@ -57,7 +57,7 @@ SCENARIOS = {
             rtt_ms=80,
             battery_level=0.80,
             user_present=True,
-            supervised_mode=False,
+            supervised_mode=True,
         ),
         "action": ProposedAction(type="DATA_EXPORT", risk_level="HIGH"),
     },
