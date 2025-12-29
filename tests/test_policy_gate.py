@@ -64,3 +64,12 @@ def test_policy_gate_allows_safe_action() -> None:
 
     assert decision == PolicyDecision.ALLOW
     assert "permitted" in reason.lower()
+
+
+def test_proposed_action_rejects_invalid_risk_level() -> None:
+    try:
+        ProposedAction(type="DATA_PROCESS", risk_level="UNKNOWN")
+    except ValueError as exc:
+        assert "risk_level" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid risk_level")

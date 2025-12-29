@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
-from typing import Mapping
 
 from decision_policy_engine.audit.events import AuditEvent
 from decision_policy_engine.models import Context, ProposedAction
@@ -18,7 +18,7 @@ def _normalize(value: object) -> object:
     if isinstance(value, list):
         return [_normalize(item) for item in value]
     if hasattr(value, "value") and not isinstance(value, (str, bytes)):
-        return getattr(value, "value")
+        return value.value
     return value
 
 

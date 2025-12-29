@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 from decision_policy_engine.decision.cost import norm_cost, norm_latency
 from decision_policy_engine.models import Context, CostVector, ExecutionRoute

@@ -51,3 +51,35 @@ def test_router_expected_winner_simple_case() -> None:
 
     assert chosen_route == ExecutionRoute.HYBRID
     assert ExecutionRoute.HYBRID in explanation.scores
+
+
+def test_router_prefers_degraded_when_local_missing_and_network_off() -> None:
+    context = _base_context(network_available=False)
+    candidates = {
+        ExecutionRoute.DEGRADED: CostVector(400, 0.2, 0.3, 0.0),
+        ExecutionRoute.HYBRID: CostVector(200, 0.2, 0.2, 0.2),
+    }
+
+    chosen_route, _, _ = Router.select_route(context, candidates)
+
+    assert chosen_route == ExecutionRoute.DEGRADED
+
+
+def test_router_tie_break_with_zero_weights(monkeypatch) -> None:
+    from decision_policy_engine.decision import router as router_module
+
+    monkeypatch.setattr(
+        router_module,
+        "WEIGHTS",
+        {"latency_ms": 0.0, "privacy_risk": 0.0, "reliability_risk": 0.0, "dollar_cost": 0.0},
+    )
+    context = _base_context()
+    candidates = {
+        ExecutionRoute.LOCAL: CostVector(300, 0.4, 0.4, 0.4),
+        ExecutionRoute.HYBRID: CostVector(100, 0.1, 0.1, 0.1),
+        ExecutionRoute.CLOUD: CostVector(50, 0.05, 0.05, 0.05),
+    }
+
+    chosen_route, _, _ = router_module.Router.select_route(context, candidates)
+
+    assert chosen_route == ExecutionRoute.LOCAL

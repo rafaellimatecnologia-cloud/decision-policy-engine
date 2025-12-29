@@ -7,18 +7,22 @@ name = "decision-policy-engine"
 version = "0.1.0"
 description = "Deterministic, auditable decision + policy engine for execution routing."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Decision Policy Engine Contributors" }]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "License :: OSI Approved :: MIT License",
+  "Typing :: Typed",
 ]
+keywords = ["policy", "decision", "routing", "audit", "deterministic"]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "ruff"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
