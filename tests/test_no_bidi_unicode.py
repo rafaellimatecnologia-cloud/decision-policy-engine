@@ -17,7 +17,7 @@ BIDI_CHARS = {
     "\u061C",
 }
 
-SCAN_EXTENSIONS = {".md", ".py", ".toml", ".yml", ".yaml", ".txt"}
+SCAN_EXTENSIONS = {".json", ".jsonl", ".md", ".py", ".toml", ".yml", ".yaml", ".txt"}
 SCAN_FILES = {"LICENSE"}
 
 
