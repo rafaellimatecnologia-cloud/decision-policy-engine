@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-BIDI_AND_HIDDEN = {
+HIDDEN_CHARS = {
     "\u202A",
     "\u202B",
     "\u202C",
@@ -21,16 +21,17 @@ BIDI_AND_HIDDEN = {
     "\u200C",
     "\u200D",
     "\u2060",
-    "\u00AD",
+    "\u2028",
+    "\u2029",
 }
 BOM = "\ufeff"
-SCAN_EXTENSIONS = {".py", ".md", ".yml", ".yaml", ".toml", ".txt", ".json", ".jsonl"}
+SCAN_EXTENSIONS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
 
 
 def sanitize_text(text: str) -> str:
     if text.startswith(BOM):
         text = text.lstrip(BOM)
-    for char in BIDI_AND_HIDDEN:
+    for char in HIDDEN_CHARS:
         text = text.replace(char, "")
     return text
 

@@ -6,7 +6,8 @@ Thanks for your interest in contributing!
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
+pip install -e ".[dev]"
 ```
 
 ## Linting and tests

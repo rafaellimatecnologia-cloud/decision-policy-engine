@@ -20,10 +20,11 @@ FORBIDDEN_CHARS = {
     "\u200C",
     "\u200D",
     "\u2060",
-    "\u00AD",
+    "\u2028",
+    "\u2029",
 }
 
-SCAN_EXTENSIONS = {".json", ".jsonl", ".md", ".py", ".toml", ".yml", ".yaml", ".txt"}
+SCAN_EXTENSIONS = {".md", ".py", ".toml", ".yml", ".yaml"}
 SCAN_FILES = {"LICENSE"}
 
 
