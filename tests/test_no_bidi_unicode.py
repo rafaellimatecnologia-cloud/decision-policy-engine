@@ -24,7 +24,7 @@ FORBIDDEN_CHARS = {
     "\u2029",
 }
 
-SCAN_EXTENSIONS = {".md", ".py", ".toml", ".yml", ".yaml"}
+SCAN_EXTENSIONS = {".md", ".py", ".toml", ".yml", ".yaml", ".txt"}
 SCAN_FILES = {"LICENSE"}
 
 
