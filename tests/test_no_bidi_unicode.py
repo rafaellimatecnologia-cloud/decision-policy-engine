@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-BIDI_CHARS = {
+FORBIDDEN_CHARS = {
     "\u202A",
     "\u202B",
     "\u202C",
@@ -15,6 +15,12 @@ BIDI_CHARS = {
     "\u200E",
     "\u200F",
     "\u061C",
+    "\ufeff",
+    "\u200B",
+    "\u200C",
+    "\u200D",
+    "\u2060",
+    "\u00AD",
 }
 
 SCAN_EXTENSIONS = {".json", ".jsonl", ".md", ".py", ".toml", ".yml", ".yaml", ".txt"}
@@ -39,7 +45,7 @@ def test_no_bidi_unicode_characters() -> None:
     offenders: list[str] = []
     for path in _iter_files(repo_root):
         content = path.read_text(encoding="utf-8", errors="ignore")
-        if any(char in content for char in BIDI_CHARS):
+        if any(char in content for char in FORBIDDEN_CHARS):
             offenders.append(str(path.relative_to(repo_root)))
 
     assert not offenders, f"Found bidi/hidden Unicode characters in: {offenders}"
