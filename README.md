@@ -1,4 +1,3 @@
-
 ## Portfolio Note (Safe-to-Publish)
 This repository is a public, generic demonstration of deterministic policy-based routing and auditable decision logs.
 It is intentionally IP-safe and does not disclose any proprietary architectures, algorithms, or patent-related material.
