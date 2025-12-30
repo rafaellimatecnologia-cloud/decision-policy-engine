@@ -22,12 +22,9 @@ CODEPOINTS = {
 CODEPOINTS.update(range(0x202A, 0x202F))
 CODEPOINTS.update(range(0x2066, 0x206A))
 
+FORBIDDEN_UTF8 = {codepoint: chr(codepoint).encode("utf-8") for codepoint in CODEPOINTS}
+
 SCAN_EXTENSIONS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
-
-
-def sanitize_text(text: str) -> str:
-    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
-    return "".join(ch for ch in normalized if ord(ch) not in CODEPOINTS)
 
 
 def iter_tracked_files(repo_root: Path) -> list[Path]:
@@ -46,18 +43,22 @@ def iter_tracked_files(repo_root: Path) -> list[Path]:
     return paths
 
 
+def sanitize_bytes(data: bytes) -> bytes:
+    if data.startswith(BOM_BYTES):
+        data = data[len(BOM_BYTES) :]
+    for sequence in FORBIDDEN_UTF8.values():
+        data = data.replace(sequence, b"")
+    data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return data
+
+
 def sanitize_repo(repo_root: Path) -> list[Path]:
     changed: list[Path] = []
     for path in iter_tracked_files(repo_root):
         data = path.read_bytes()
-        bom_stripped = False
-        if data.startswith(BOM_BYTES):
-            data = data[len(BOM_BYTES) :]
-            bom_stripped = True
-        text = data.decode("utf-8", errors="ignore")
-        sanitized = sanitize_text(text)
-        if sanitized != text or bom_stripped:
-            path.write_text(sanitized, encoding="utf-8", newline="\n")
+        sanitized = sanitize_bytes(data)
+        if sanitized != data:
+            path.write_bytes(sanitized)
             changed.append(path)
     return changed
 

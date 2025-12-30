@@ -22,6 +22,8 @@ CODEPOINTS = {
 CODEPOINTS.update(range(0x202A, 0x202F))
 CODEPOINTS.update(range(0x2066, 0x206A))
 
+FORBIDDEN_UTF8 = {codepoint: chr(codepoint).encode("utf-8") for codepoint in CODEPOINTS}
+
 SCAN_EXTENSIONS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
 
 
@@ -46,10 +48,10 @@ def scan_file(path: Path) -> list[str]:
     data = path.read_bytes()
     if data.startswith(BOM_BYTES):
         issues.append("BOM")
-    text = data.decode("utf-8", errors="ignore")
-    found = sorted({f"U+{ord(ch):04X}" for ch in text if ord(ch) in CODEPOINTS})
-    issues.extend(found)
-    return issues
+    for codepoint, sequence in FORBIDDEN_UTF8.items():
+        if sequence in data:
+            issues.append(f"U+{codepoint:04X}")
+    return sorted(set(issues))
 
 
 def main() -> None:
