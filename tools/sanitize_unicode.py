@@ -54,3 +54,63 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+from __future__ import annotations
+
+import subprocess
+import unicodedata
+from pathlib import Path
+
+EXTS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
+BIDI_BAD = {"LRE", "RLE", "PDF", "LRO", "RLO", "LRI", "RLI", "FSI", "PDI"}
+ALLOWED_CC = {"\n", "\t"}
+
+def git_ls_files() -> list[str]:
+    out = subprocess.check_output(["git", "ls-files"], text=True)
+    return [line.strip() for line in out.splitlines() if line.strip()]
+
+def is_suspicious(ch: str) -> bool:
+    cat = unicodedata.category(ch)
+    if cat == "Cf":
+        return True
+    if unicodedata.bidirectional(ch) in BIDI_BAD:
+        return True
+    if cat == "Cc" and ch not in ALLOWED_CC:
+        return True
+    return False
+
+def main() -> int:
+    changed = 0
+
+    for rel in git_ls_files():
+        p = Path(rel)
+        if p.suffix.lower() not in EXTS:
+            continue
+
+        raw = p.read_bytes()
+        if raw.startswith(b"\xEF\xBB\xBF"):
+            raw = raw[3:]  # strip BOM bytes
+
+        try:
+            text = raw.decode("utf-8", errors="strict")
+        except UnicodeDecodeError:
+            continue
+
+        # normalize line endings
+        text2 = text.replace("\r\n", "\n").replace("\r", "\n")
+
+        # remove suspicious chars
+        cleaned = "".join(ch for ch in text2 if not is_suspicious(ch))
+
+        # ensure final newline (boa prática)
+        if cleaned and not cleaned.endswith("\n"):
+            cleaned += "\n"
+
+        if cleaned != text:
+            p.write_bytes(cleaned.encode("utf-8"))
+            changed += 1
+
+    print(f"Sanitized {changed} file(s).")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
