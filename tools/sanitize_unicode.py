@@ -1,78 +1,56 @@
-"""Remove hidden/bidi Unicode characters from tracked text files."""
-
 from __future__ import annotations
 
 import subprocess
 from pathlib import Path
 
-BOM_BYTES = b"\xef\xbb\xbf"
-
-CODEPOINTS = {
+BAD_CODEPOINTS = {
     0xFEFF,
-    0x200B,
-    0x200C,
-    0x200D,
-    0x2060,
-    0x061C,
-    0x200E,
-    0x200F,
-    0x2028,
-    0x2029,
+    0x200B, 0x200C, 0x200D, 0x2060,
+    0x061C, 0x200E, 0x200F,
+    0x2028, 0x2029,
 }
-CODEPOINTS.update(range(0x202A, 0x202F))
-CODEPOINTS.update(range(0x2066, 0x206A))
+BAD_RANGES = [
+    (0x202A, 0x202E),
+    (0x2066, 0x2069),
+]
 
-FORBIDDEN_UTF8 = {codepoint: chr(codepoint).encode("utf-8") for codepoint in CODEPOINTS}
+EXTS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
 
-SCAN_EXTENSIONS = {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}
+def is_bad(cp: int) -> bool:
+    if cp in BAD_CODEPOINTS:
+        return True
+    return any(lo <= cp <= hi for lo, hi in BAD_RANGES)
 
+def git_ls_files() -> list[str]:
+    out = subprocess.check_output(["git", "ls-files"], text=True)
+    return [line.strip() for line in out.splitlines() if line.strip()]
 
-def iter_tracked_files(repo_root: Path) -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files"],
-        cwd=repo_root,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    paths = []
-    for line in result.stdout.splitlines():
-        path = repo_root / line
-        if path.suffix in SCAN_EXTENSIONS:
-            paths.append(path)
-    return paths
+def sanitize_text(s: str) -> str:
+    return "".join(ch for ch in s if not is_bad(ord(ch)))
 
+def main() -> int:
+    changed = 0
+    for rel in git_ls_files():
+        p = Path(rel)
+        if p.suffix.lower() not in EXTS:
+            continue
 
-def sanitize_bytes(data: bytes) -> bytes:
-    if data.startswith(BOM_BYTES):
-        data = data[len(BOM_BYTES) :]
-    for sequence in FORBIDDEN_UTF8.values():
-        data = data.replace(sequence, b"")
-    data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-    return data
+        raw = p.read_bytes()
+        if raw.startswith(b"\xEF\xBB\xBF"):
+            raw = raw[3:]  # strip BOM bytes
 
+        try:
+            text = raw.decode("utf-8", errors="strict")
+        except UnicodeDecodeError:
+            continue
 
-def sanitize_repo(repo_root: Path) -> list[Path]:
-    changed: list[Path] = []
-    for path in iter_tracked_files(repo_root):
-        data = path.read_bytes()
-        sanitized = sanitize_bytes(data)
-        if sanitized != data:
-            path.write_bytes(sanitized)
-            changed.append(path)
-    return changed
+        clean = sanitize_text(text).replace("\r\n", "\n")
+        if clean != text:
+            p.write_bytes(clean.encode("utf-8"))
+            changed += 1
 
-
-def main() -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    changed = sanitize_repo(repo_root)
-    if not changed:
-        print("No hidden Unicode characters found.")
-        return
-    print("Sanitized files:")
-    for path in changed:
-        print(f"- {path.relative_to(repo_root)}")
-
+    print(f"Sanitized {changed} file(s).")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
