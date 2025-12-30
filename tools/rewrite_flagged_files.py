@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import unicodedata
 from pathlib import Path
+import unicodedata
 
 TARGETS = [
     Path(".editorconfig"),
@@ -19,11 +19,11 @@ BIDI_BAD = {"LRE", "RLE", "PDF", "LRO", "RLO", "LRI", "RLI", "FSI", "PDI"}
 
 def is_bad(ch: str) -> bool:
     cat = unicodedata.category(ch)
-    if cat == "Cf":  # zero-width / format chars
+    if cat == "Cf":  # zero-width / format
         return True
     if unicodedata.bidirectional(ch) in BIDI_BAD:
         return True
-    if cat == "Cc" and ch not in ("\n", "\t"):  # keep LF + TAB only
+    if cat == "Cc" and ch not in ("\n", "\t"):  # remove outros controles
         return True
     return False
 
@@ -38,17 +38,13 @@ def main() -> None:
     rewrote = 0
     for p in TARGETS:
         if not p.exists():
-            print("skip:", p)
             continue
-
         raw = p.read_bytes()
-        text = raw.decode("utf-8-sig", errors="strict")  # strips BOM if present
+        text = raw.decode("utf-8-sig", errors="strict")  # remove BOM se existir
         cleaned = scrub(text)
-
-        # FORCE rewrite (UTF-8 no BOM + LF) even if "looks the same"
+        # FORÇA regravação (mesmo se "parecer igual")
         p.write_text(cleaned, encoding="utf-8", newline="\n")
         rewrote += 1
-
     print(f"Rewrote {rewrote} file(s).")
 
 if __name__ == "__main__":
