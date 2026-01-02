@@ -77,6 +77,16 @@ print(policy_decision, reason)
 - No live network calls.
 - Only structured, redacted inputs are stored in the audit log.
 
+## Portfolio Note (Safe-to-Publish)
+This repository is intentionally scoped to be safe for public sharing. It uses synthetic inputs,
+deterministic policies, and local-only audit logs to demonstrate decisioning mechanics without
+exposing proprietary data or infrastructure.
+
+## Skills Demonstrated
+- Deterministic policy evaluation and routing logic.
+- Reproducible audit trails with canonical serialization and hashing.
+- Testable, dependency-light Python architecture.
+
 ## Design principles
 - **Determinism:** same inputs yield the same decision, route, and audit hash.
 - **Explicit cost vectors:** routing is driven by named, weighted signals.
