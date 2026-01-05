@@ -1,6 +1,6 @@
-"""Audit trace helpers."""
-
 from __future__ import annotations
+
+"""Audit trace helpers."""
 
 import json
 from collections.abc import Mapping

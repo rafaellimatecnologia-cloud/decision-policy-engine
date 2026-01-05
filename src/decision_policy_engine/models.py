@@ -1,6 +1,6 @@
-"""Core models for the decision policy engine."""
-
 from __future__ import annotations
+
+"""Core models for the decision policy engine."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
