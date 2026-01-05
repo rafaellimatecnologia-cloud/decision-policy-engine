@@ -41,6 +41,7 @@ flowchart TD
     Service -->|compute| LocalModel
     Service -->|deadline exceeded| DegradedResponse
     Service --> Metrics
+```
 Quickstart
 Copiar código
 Bash
