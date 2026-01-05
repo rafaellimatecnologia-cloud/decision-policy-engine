@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-"""CLI demo for the decision policy engine."""
-
 import argparse
 import json
 from dataclasses import replace
