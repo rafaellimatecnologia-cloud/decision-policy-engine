@@ -1,163 +1,133 @@
-"""CLI demo for the decision policy engine."""
+"""Minimal demo CLI for the decision policy engine."""
 
 from __future__ import annotations
 
-import argparse
 import json
-from dataclasses import replace
-from datetime import datetime, timezone
-from pathlib import Path
-from uuid import uuid4
 
-from decision_policy_engine.audit.events import AuditEvent
-from decision_policy_engine.audit.trace import append_jsonl, hash_event, redact_inputs
 from decision_policy_engine.decision.router import Router
-from decision_policy_engine.models import (
-    Context,
-    CostVector,
-    ExecutionRoute,
-    ProposedAction,
-)
+from decision_policy_engine.models import Context, CostVector, ExecutionRoute, ProposedAction
 from decision_policy_engine.policy.policy_gate import PolicyGate
 
-SCENARIOS = {
-    "network_off": {
-        "context": Context(
-            network_available=False,
-            rtt_ms=0,
-            battery_level=0.75,
-            user_present=True,
-            supervised_mode=False,
-        ),
-        "action": ProposedAction(type="NETWORK_CALL", risk_level="LOW"),
-    },
-    "high_latency": {
-        "context": Context(
-            network_available=True,
-            rtt_ms=1200,
-            battery_level=0.55,
-            user_present=True,
-            supervised_mode=False,
-        ),
-        "action": ProposedAction(type="DATA_PROCESS", risk_level="MEDIUM"),
-    },
-    "low_battery": {
-        "context": Context(
-            network_available=True,
-            rtt_ms=120,
-            battery_level=0.05,
-            user_present=True,
-            supervised_mode=False,
-        ),
-        "action": ProposedAction(type="NETWORK_CALL", risk_level="LOW"),
-    },
-    "supervised_high_risk": {
-        "context": Context(
-            network_available=True,
-            rtt_ms=80,
-            battery_level=0.80,
-            user_present=True,
-            supervised_mode=True,
-        ),
-        "action": ProposedAction(type="DATA_EXPORT", risk_level="HIGH"),
-    },
-}
 
-
-def build_candidates(context: Context) -> dict[ExecutionRoute, CostVector]:
-    """Build candidate cost vectors for demo scenarios."""
-
+def _serialize_context(context: Context) -> dict[str, object]:
     return {
-        ExecutionRoute.LOCAL: CostVector(
-            latency_ms=120,
-            privacy_risk=0.05,
-            reliability_risk=0.10,
-            dollar_cost=0.02,
-        ),
-        ExecutionRoute.HYBRID: CostVector(
-            latency_ms=max(200, context.rtt_ms),
-            privacy_risk=0.15,
-            reliability_risk=0.20,
-            dollar_cost=0.20,
-        ),
-        ExecutionRoute.CLOUD: CostVector(
-            latency_ms=max(300, context.rtt_ms + 80),
-            privacy_risk=0.35,
-            reliability_risk=0.30,
-            dollar_cost=0.45,
-        ),
-        ExecutionRoute.DEGRADED: CostVector(
-            latency_ms=600,
-            privacy_risk=0.02,
-            reliability_risk=0.40,
-            dollar_cost=0.00,
-        ),
+        "battery_level": context.battery_level,
+        "locale": context.locale,
+        "network_available": context.network_available,
+        "rtt_ms": context.rtt_ms,
+        "supervised_mode": context.supervised_mode,
+        "user_present": context.user_present,
     }
 
 
-def _read_last_hash(path: Path) -> str | None:
-    if not path.exists():
-        return None
-    lines = path.read_text(encoding="utf-8").strip().splitlines()
-    if not lines:
-        return None
-    payload = json.loads(lines[-1])
-    value = payload.get("hash")
-    return str(value) if value else None
+def _serialize_action(action: ProposedAction) -> dict[str, object]:
+    return {
+        "metadata": dict(action.metadata),
+        "risk_level": action.risk_level,
+        "type": action.type,
+    }
 
 
-def run_scenario(name: str) -> None:
-    """Run a demo scenario and append an audit log."""
+def _serialize_cost(cost: CostVector) -> dict[str, float]:
+    return {
+        "dollar_cost": cost.dollar_cost,
+        "latency_ms": cost.latency_ms,
+        "privacy_risk": cost.privacy_risk,
+        "reliability_risk": cost.reliability_risk,
+    }
 
-    scenario = SCENARIOS[name]
-    context = scenario["context"]
-    action = scenario["action"]
 
-    policy_decision, reason = PolicyGate.evaluate(context, action)
-    candidates = build_candidates(context)
-    chosen_route, chosen_cost, explanation = Router.select_route(context, candidates)
+def _serialize_candidates(
+    candidates: dict[ExecutionRoute, CostVector],
+) -> dict[str, dict[str, float]]:
+    return {
+        route.value: _serialize_cost(cost)
+        for route, cost in sorted(candidates.items(), key=lambda item: item[0].value)
+    }
 
-    trace_id = str(uuid4())
-    decision_id = str(uuid4())
-    timestamp_iso = datetime.now(timezone.utc).isoformat()
 
-    output_path = Path("out") / "audit_log.jsonl"
-    prev_hash = _read_last_hash(output_path)
+def _serialize_scores(scores: dict[ExecutionRoute, float]) -> dict[str, float]:
+    return {
+        route.value: score
+        for route, score in sorted(scores.items(), key=lambda item: item[0].value)
+    }
 
-    event = AuditEvent(
-        timestamp_iso=timestamp_iso,
-        trace_id=trace_id,
-        decision_id=decision_id,
-        action_type=action.type,
-        policy_decision=policy_decision,
-        route_selected=chosen_route,
-        cost_vector=chosen_cost,
-        reason=reason,
-        inputs_redacted=redact_inputs(context, action),
-        prev_hash=prev_hash,
-    )
-    event_hash = hash_event(event, prev_hash=prev_hash)
-    event = replace(event, hash=event_hash)
 
-    append_jsonl(output_path, event)
+def _serialize_normalized(
+    normalized: dict[ExecutionRoute, dict[str, float]],
+) -> dict[str, dict[str, float]]:
+    return {
+        route.value: {
+            key: normalized[route][key] for key in sorted(normalized[route].keys())
+        }
+        for route in sorted(normalized.keys(), key=lambda item: item.value)
+    }
 
-    print(f"Scenario: {name}")
-    print(f"Policy decision: {policy_decision} ({reason})")
-    print(f"Route selected: {chosen_route}")
-    print(f"Score breakdown: {explanation.scores}")
-    print(f"Audit hash: {event_hash}")
-    print(f"Audit log appended: {output_path}")
+
+def _build_trace(
+    context: Context,
+    action: ProposedAction,
+    policy_decision: str,
+    policy_reason: str,
+    candidates: dict[ExecutionRoute, CostVector],
+    chosen_route: ExecutionRoute,
+    chosen_cost: CostVector,
+    explanation,
+) -> dict[str, object]:
+    return {
+        "action": _serialize_action(action),
+        "context": _serialize_context(context),
+        "policy": {
+            "decision": policy_decision,
+            "reason": policy_reason,
+        },
+        "routing": {
+            "candidates": _serialize_candidates(candidates),
+            "chosen_cost": _serialize_cost(chosen_cost),
+            "chosen_route": chosen_route.value,
+            "normalized": _serialize_normalized(explanation.normalized),
+            "scores": _serialize_scores(explanation.scores),
+            "weights": {key: explanation.weights[key] for key in sorted(explanation.weights)},
+        },
+    }
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--scenario",
-        choices=SCENARIOS.keys(),
-        default="network_off",
+    context = Context(
+        network_available=True,
+        rtt_ms=85,
+        battery_level=0.72,
+        user_present=True,
+        supervised_mode=True,
     )
-    args = parser.parse_args()
-    run_scenario(args.scenario)
+    action = ProposedAction(
+        type="DATA_LOOKUP",
+        risk_level="MEDIUM",
+        metadata={"request_id": "demo-001"},
+    )
+    candidates = {
+        ExecutionRoute.LOCAL: CostVector(95, 0.05, 0.08, 0.02),
+        ExecutionRoute.HYBRID: CostVector(120, 0.08, 0.12, 0.05),
+        ExecutionRoute.CLOUD: CostVector(210, 0.22, 0.18, 0.12),
+        ExecutionRoute.DEGRADED: CostVector(300, 0.02, 0.2, 0.0),
+    }
+
+    policy_decision, policy_reason = PolicyGate.evaluate(context, action)
+    chosen_route, chosen_cost, explanation = Router.select_route(context, candidates)
+
+    trace = _build_trace(
+        context,
+        action,
+        policy_decision.value,
+        policy_reason,
+        candidates,
+        chosen_route,
+        chosen_cost,
+        explanation,
+    )
+
+    print(f"decision: {policy_decision.value}")
+    print(json.dumps(trace, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
