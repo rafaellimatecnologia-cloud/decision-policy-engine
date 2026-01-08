@@ -40,16 +40,16 @@ Deterministic decision policy engine with auditable traces for safe, repeatable 
 
 ```mermaid
 flowchart TD
-    Request --> PolicyGate
-    PolicyGate --> Router
-    Router --> Score
-    Score -->|LOCAL| RouteLocal
-    Score -->|HYBRID| RouteHybrid
-    Score -->|DEGRADED| RouteDegraded
-    RouteLocal --> AuditLog[AuditLog (JSONL)]
-    RouteHybrid --> AuditLog
-    RouteDegraded --> AuditLog
-    AuditLog --> AuditHash
+  A[Request] --> B[Policy Gate]
+  B --> C[Router]
+  C --> D{Route}
+  D -->|LOCAL| E[Local Executor]
+  D -->|HYBRID| F[Hybrid Executor]
+  D -->|DEGRADED| G[Degraded Response]
+  E --> H["Audit Log (JSONL)"]
+  F --> H
+  G --> H
+  H --> I["Audit Hash"]
 ```
 
 ## Quickstart
