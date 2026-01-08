@@ -1,5 +1,3 @@
-"""CLI demo for the decision policy engine."""
-
 from __future__ import annotations
 
 import argparse

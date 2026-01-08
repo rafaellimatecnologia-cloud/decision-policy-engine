@@ -1,6 +1,6 @@
-"""Policy gate implementation."""
-
 from __future__ import annotations
+
+"""Policy gate implementation."""
 
 from decision_policy_engine.models import Context, PolicyDecision, ProposedAction
 

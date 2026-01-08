@@ -1,6 +1,6 @@
-"""Cost normalization utilities."""
-
 from __future__ import annotations
+
+"""Cost normalization utilities."""
 
 LATENCY_MIN_MS = 0
 LATENCY_MAX_MS = 2000

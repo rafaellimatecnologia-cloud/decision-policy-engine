@@ -1,6 +1,6 @@
-"""Route selection based on cost vectors."""
-
 from __future__ import annotations
+
+"""Route selection based on cost vectors."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
