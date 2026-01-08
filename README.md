@@ -1,70 +1,96 @@
-# rafaellima_AI_1
+# decision-policy-engine
 
-Enterprise-grade, **local-first AI service** with deterministic routing,  
-hard deadlines, and production-grade observability.
+[![CI](https://github.com/rafaellimatecnologia-cloud/decision-policy-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaellimatecnologia-cloud/decision-policy-engine/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://github.com/rafaellimatecnologia-cloud/decision-policy-engine)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/rafaellimatecnologia-cloud/decision-policy-engine/blob/main/LICENSE)
+[![Code style](https://img.shields.io/badge/code%20style-ruff-black)](https://github.com/rafaellimatecnologia-cloud/decision-policy-engine)
+[![Type checked](https://img.shields.io/badge/types-mypy-blueviolet)](https://github.com/rafaellimatecnologia-cloud/decision-policy-engine)
 
-Designed to demonstrate **platform, backend, and AI-infrastructure engineering**
-practices in a real-world, production-oriented context.
+## Portfolio Note (Safe-to-Publish)
 
-![CI](https://github.com/rafaellimatecnologia-cloud/rafaellima_AI_1/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Code style](https://img.shields.io/badge/code%20style-ruff-black)
-![Type checked](https://img.shields.io/badge/types-mypy-blueviolet)
+This repository is intentionally scoped for public viewing. It demonstrates decision routing and auditability patterns without exposing proprietary data, models, or customer context.
 
----
+Deterministic decision policy engine with auditable traces for safe, repeatable execution routing.
+
+## Demo (3 seconds)
+
+![Demo: decision trace](./powershell_2ytH1O0nLM.gif)
 
 ## Why this matters
 
-- **Local-first AI** reduces latency, operational cost, and data exposure compared to cloud-only inference.
-- **Deterministic routing and deadlines** prevent unpredictable behavior and runaway compute costs.
-- **Production guardrails** (CI, typing, Unicode safety) reflect real constraints faced by enterprise systems.
+- Predictable routing decisions reduce operational surprises and make incidents easier to debug.
+- Explicit policies keep risk and compliance controls visible in the codebase.
+- Auditable traces enable reproducibility and trustworthy post-incident analysis.
 
----
+## Use cases
+
+- Gatekeeping for model or service selection in multi-environment deployments.
+- Runtime fallback selection during partial outages or latency spikes.
+- Policy-driven execution for regulated or high-risk workflows.
 
 ## What this demonstrates
 
-- Designing **local-first AI services** with explicit failure and degradation paths
-- **Deadline-aware execution** with graceful fallback behavior
-- Production CI with **linting, typing, and tests** across multiple Python versions
-- Defensive engineering against **Trojan Source / hidden Unicode attacks**
-- Clean Python packaging using the **src/** layout and editable installs
+- Deterministic routing with explicit policy constraints and fallback states.
+- Auditability via trace logging suitable for regulated environments.
+- Enterprise-grade CI hygiene for tests, linting, and packaging.
+- Clear decision boundaries for safe degradation and recovery paths.
+- Production-ready repository structure with a clean src/ layout.
 
----
-
-## Architecture overview
+## Architecture
 
 ```mermaid
 flowchart TD
-    Client --> Service
-    Service -->|fast path| LocalCache
-    Service -->|compute| LocalModel
-    Service -->|deadline exceeded| DegradedResponse
-    Service --> Metrics
+    Request --> PolicyGate
+    PolicyGate --> Router
+    Router --> Score
+    Score -->|LOCAL| RouteLocal
+    Score -->|HYBRID| RouteHybrid
+    Score -->|DEGRADED| RouteDegraded
+    RouteLocal --> AuditLog[AuditLog (JSONL)]
+    RouteHybrid --> AuditLog
+    RouteDegraded --> AuditLog
+    AuditLog --> AuditHash
 ```
 
-``` Quickstart
+## Quickstart
 
-pip install -e .
+### Windows PowerShell
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
 python examples/demo_cli.py
-pytest
-````
-Repository structure
+pytest -q
+```
+
+### macOS/Linux
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+python examples/demo_cli.py
+pytest -q
+```
+
+## Guarantees
+
+- Determinism: identical inputs yield identical routing outcomes.
+- Explicit constraints: policies enumerate allowed paths and fallback behavior.
+- Audit trace integrity: every decision emits a trace with verifiable ordering.
+
+## Repo layout
+
 ```
 .
-├── src/rafaellima_AI_1/      # Core service implementation
-├── tests/                   # Unit and behavior tests
-├── tools/                   # Unicode and security guardrails
-├── examples/                # Minimal demo CLI
-├── .github/                 # CI, issue and PR templates
-└── pyproject.toml           # Packaging, linting, typing config
+├── src/decision_policy_engine/   # Core policy engine
+├── examples/                     # Demo CLI
+├── tests/                        # Unit and behavior tests
+├── .github/                      # CI workflows
+└── pyproject.toml                # Packaging and tool configuration
 ```
-Engineering guarantees
-Deterministic behavior: same inputs produce the same routing decisions
-Deadline enforcement: hard execution limits with explicit degradation
-Observability: metrics emitted for all execution paths
-Security hygiene: Unicode normalization and Trojan Source protection
-CI quality gates: ruff, mypy, pytest executed on every change
-Portfolio note
-This repository is intentionally scoped as a public portfolio artifact.
-It demonstrates production-grade engineering practices and architectural decision-making without exposing proprietary models, datasets, or business logic.
+
+## License
+
+MIT licensed. See [LICENSE](./LICENSE).
